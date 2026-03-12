@@ -9,6 +9,10 @@ let currentRelease = null;
 // ============================================
 
 async function loadNewestRelease() {
+
+    // Create audio element for playback
+    topPlayerAudio = new Audio("assets/audio/mind-matter-preview.mp3");
+
     if (typeof firebase === 'undefined' || !firebase.firestore) {
         console.log('Firebase not available, using placeholder');
         showPlaceholderPlayer();
@@ -16,6 +20,7 @@ async function loadNewestRelease() {
     }
 
     try {
+
         const snapshot = await firebase.firestore()
             .collection('songs')
             .orderBy('releaseDate', 'desc')
@@ -32,8 +37,10 @@ async function loadNewestRelease() {
         updateTopPlayer(currentRelease);
 
     } catch (error) {
+
         console.error('Error loading newest release:', error);
         showPlaceholderPlayer();
+
     }
 }
 
@@ -42,94 +49,101 @@ async function loadNewestRelease() {
 // ============================================
 
 function updateTopPlayer(release) {
-    document.getElementById('topPlayerTitle').textContent = release.title || 'Latest Release';
-    document.getElementById('topPlayerArtist').textContent = release.artist || 'Great Minds Creating';
 
-    // Update cover image
+    document.getElementById('topPlayerTitle').textContent =
+        release.title || "MIND > MATTER";
+
+    document.getElementById('topPlayerArtist').textContent =
+        release.artist || "Great Minds Creating";
+
     const coverImg = document.getElementById('topPlayerCover');
+
     if (release.coverImage) {
+
         coverImg.src = release.coverImage;
         coverImg.alt = release.title;
+
     } else {
-        coverImg.style.display = 'none';
+
+        coverImg.style.display = "none";
+
     }
 
-    // Update Spotify link
     const spotifyLink = document.getElementById('topPlayerSpotifyLink');
+
     if (release.spotifyLink) {
+
         spotifyLink.href = release.spotifyLink;
-        spotifyLink.style.display = 'flex';
+        spotifyLink.style.display = "flex";
+
     } else {
-        spotifyLink.style.display = 'none';
+
+        spotifyLink.href =
+            "https://open.spotify.com/album/6wUYfAEUysLOeR0uK5I7w1";
+
     }
 
-    // If Spotify link is an embed link, create audio element (simplified)
-    // Note: Due to browser restrictions, actual Spotify playback requires Spotify SDK
-    // This is a placeholder for the play button functionality
 }
 
+// ============================================
+// PLACEHOLDER PLAYER
+// ============================================
+
 function showPlaceholderPlayer() {
-    document.getElementById('topPlayerTitle').textContent = 'Latest Release';
-    document.getElementById('topPlayerArtist').textContent = 'Great Minds Creating';
-    document.getElementById('topPlayerCover').style.display = 'none';
-    document.getElementById('topPlayerSpotifyLink').href = 'https://open.spotify.com/artist/placeholder';
+
+    document.getElementById('topPlayerTitle').textContent =
+        "MIND > MATTER";
+
+    document.getElementById('topPlayerArtist').textContent =
+        "Great Minds Creating";
+
+    const cover = document.getElementById('topPlayerCover');
+
+    if (cover) {
+        cover.style.display = "none";
+    }
+
+    const spotifyLink = document.getElementById('topPlayerSpotifyLink');
+
+    if (spotifyLink) {
+        spotifyLink.href =
+            "https://open.spotify.com/album/6wUYfAEUysLOeR0uK5I7w1";
+    }
+
 }
 
 // ============================================
 // PLAY BUTTON
 // ============================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    const playBtn = document.getElementById('topPlayerPlayBtn');
+document.addEventListener("DOMContentLoaded", function () {
 
-    if (playBtn) {
-        playBtn.addEventListener('click', function() {
-            // Open Spotify link when play is clicked
-            // Real playback requires Spotify SDK integration
-            if (currentRelease && currentRelease.spotifyLink) {
-                window.open(currentRelease.spotifyLink, '_blank');
-            } else {
-                const spotifyLink = document.getElementById('topPlayerSpotifyLink');
-                if (spotifyLink && spotifyLink.href) {
-                    window.open(spotifyLink.href, '_blank');
-                }
-            }
-        });
-    }
+    const playBtn = document.getElementById("topPlayerPlayBtn");
 
-    // Load newest release on page load
-    loadNewestRelease();
-});
+    if (!playBtn) return;
 
-// ============================================
-// NOTES ON SPOTIFY PLAYBACK
-// ============================================
+    playBtn.addEventListener("click", function () {
 
-/*
-For actual Spotify playback (not just linking), you would need to:
+        if (!topPlayerAudio) {
+            console.log("Audio not loaded yet");
+            return;
+        }
 
-1. Register your app at: https://developer.spotify.com/dashboard
-2. Include Spotify Web Playback SDK:
-   <script src="https://sdk.scdn.co/spotify-player.js"></script>
-3. Implement authentication flow
-4. Use the Spotify Player API
+        if (topPlayerAudio.paused) {
 
-Example implementation:
+            topPlayerAudio.play();
+            playBtn.innerHTML = "❚❚";
 
-window.onSpotifyWebPlaybackSDKReady = () => {
-    const player = new Spotify.Player({
-        name: 'Great Minds Creating Player',
-        getOAuthToken: cb => { cb(access_token); },
-        volume: 0.5
+        } else {
+
+            topPlayerAudio.pause();
+            playBtn.innerHTML = "▶";
+
+        }
+
     });
 
-    player.connect();
-};
+    // Load newest release when page loads
+    loadNewestRelease();
 
-Due to Spotify's restrictions, embedded playback requires:
-- User to have Spotify Premium
-- OAuth authentication
-- Active Spotify session
-
-For now, the play button opens the Spotify link in a new tab.
-*/
+});
