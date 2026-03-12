@@ -1,9 +1,8 @@
+```javascript
 // Great Minds Creating - Top Music Player
-// Persistent music player bar at top of page
-// EP Playlist Version
+// EP Playlist Player
 
-let topPlayerAudio = null;
-let currentRelease = null;
+let audioPlayer = null;
 let currentTrackIndex = 0;
 
 // ============================================
@@ -11,11 +10,20 @@ let currentTrackIndex = 0;
 // ============================================
 
 const playlist = [
-    "assets/audio/ms.mp3",
-    "assets/audio/last-time.mp3",
-    "assets/audio/no-role-modelz.mp3",
-    "assets/audio/scrimmage.mp3",
-    "assets/audio/no-closure.mp3"
+  "assets/audio/ms.mp3",
+  "assets/audio/last-time.mp3",
+  "assets/audio/no-role-modelz.mp3",
+  "assets/audio/scrimmage.mp3",
+  "assets/audio/no-closure.mp3"
+];
+
+// Track names for UI
+const trackNames = [
+  "M's",
+  "Last Time",
+  "No Role Modelz",
+  "Scrimmage",
+  "No Closure"
 ];
 
 // ============================================
@@ -24,161 +32,50 @@ const playlist = [
 
 function loadTrack(index) {
 
-    if (index >= playlist.length) {
-        index = 0;
-    }
+  if (index >= playlist.length) {
+    index = 0;
+  }
 
-    currentTrackIndex = index;
+  currentTrackIndex = index;
 
-    topPlayerAudio.src = playlist[currentTrackIndex];
-}
+  audioPlayer.src = playlist[currentTrackIndex];
 
-// ============================================
-// LOAD NEWEST RELEASE
-// ============================================
-
-async function loadNewestRelease() {
-
-    // Create audio player
-    topPlayerAudio = new Audio();
-    topPlayerAudio.volume = 0.8;
-
-    // Load first song
-    loadTrack(0);
-
-    // Auto play next track when one ends
-    topPlayerAudio.addEventListener("ended", function () {
-
-        currentTrackIndex++;
-
-        if (currentTrackIndex >= playlist.length) {
-            currentTrackIndex = 0;
-        }
-
-        loadTrack(currentTrackIndex);
-        topPlayerAudio.play();
-
-    });
-
-    if (typeof firebase === "undefined" || !firebase.firestore) {
-
-        console.log("Firebase not available, using placeholder");
-        showPlaceholderPlayer();
-        return;
-
-    }
-
-    try {
-
-        const snapshot = await firebase
-            .firestore()
-            .collection("songs")
-            .orderBy("releaseDate", "desc")
-            .limit(1)
-            .get();
-
-        if (snapshot.empty) {
-
-            console.log("No releases found, using placeholder");
-            showPlaceholderPlayer();
-            return;
-
-        }
-
-        currentRelease = snapshot.docs[0].data();
-        updateTopPlayer(currentRelease);
-
-    } catch (error) {
-
-        console.error("Error loading newest release:", error);
-        showPlaceholderPlayer();
-
-    }
+  const title = document.getElementById("topPlayerTitle");
+  if (title) {
+    title.textContent = trackNames[currentTrackIndex];
+  }
 
 }
 
 // ============================================
-// UPDATE PLAYER UI
+// INITIALIZE PLAYER
 // ============================================
 
-function updateTopPlayer(release) {
+function initializePlayer() {
 
-    const title = document.getElementById("topPlayerTitle");
-    const artist = document.getElementById("topPlayerArtist");
-    const coverImg = document.getElementById("topPlayerCover");
+  audioPlayer = document.getElementById("audioPlayer");
 
-    if (title) {
-        title.textContent = release.title || "MIND > MATTER";
+  if (!audioPlayer) {
+    console.log("Audio element not found");
+    return;
+  }
+
+  audioPlayer.volume = 0.8;
+
+  loadTrack(0);
+
+  audioPlayer.addEventListener("ended", function () {
+
+    currentTrackIndex++;
+
+    if (currentTrackIndex >= playlist.length) {
+      currentTrackIndex = 0;
     }
 
-    if (artist) {
-        artist.textContent = release.artist || "Great Minds Creating";
-    }
+    loadTrack(currentTrackIndex);
+    audioPlayer.play();
 
-    if (coverImg) {
-
-        if (release.coverImage) {
-
-            coverImg.src = release.coverImage;
-            coverImg.alt = release.title;
-
-        } else {
-
-            coverImg.style.display = "none";
-
-        }
-
-    }
-
-    const spotifyLink = document.getElementById("topPlayerSpotifyLink");
-
-    if (spotifyLink) {
-
-        if (release.spotifyLink) {
-
-            spotifyLink.href = release.spotifyLink;
-            spotifyLink.style.display = "flex";
-
-        } else {
-
-            spotifyLink.href =
-                "https://open.spotify.com/album/6wUYfAEUysLOeR0uK5I7w1";
-
-        }
-
-    }
-
-}
-
-// ============================================
-// PLACEHOLDER PLAYER
-// ============================================
-
-function showPlaceholderPlayer() {
-
-    const title = document.getElementById("topPlayerTitle");
-    const artist = document.getElementById("topPlayerArtist");
-    const cover = document.getElementById("topPlayerCover");
-    const spotifyLink = document.getElementById("topPlayerSpotifyLink");
-
-    if (title) {
-        title.textContent = "MIND > MATTER";
-    }
-
-    if (artist) {
-        artist.textContent = "Great Minds Creating";
-    }
-
-    if (cover) {
-        cover.style.display = "none";
-    }
-
-    if (spotifyLink) {
-
-        spotifyLink.href =
-            "https://open.spotify.com/album/6wUYfAEUysLOeR0uK5I7w1";
-
-    }
+  });
 
 }
 
@@ -188,32 +85,27 @@ function showPlaceholderPlayer() {
 
 document.addEventListener("DOMContentLoaded", function () {
 
-    const playBtn = document.getElementById("topPlayerPlayBtn");
+  initializePlayer();
 
-    if (!playBtn) return;
+  const playBtn = document.getElementById("topPlayerPlayBtn");
 
-    playBtn.addEventListener("click", function () {
+  if (!playBtn) return;
 
-        if (!topPlayerAudio) {
-            console.log("Audio not ready yet");
-            return;
-        }
+  playBtn.addEventListener("click", function () {
 
-        if (topPlayerAudio.paused) {
+    if (audioPlayer.paused) {
 
-            topPlayerAudio.play();
-            playBtn.innerHTML = "❚❚";
+      audioPlayer.play();
+      playBtn.innerHTML = "❚❚";
 
-        } else {
+    } else {
 
-            topPlayerAudio.pause();
-            playBtn.innerHTML = "▶";
+      audioPlayer.pause();
+      playBtn.innerHTML = "▶";
 
-        }
+    }
 
-    });
-
-    // Load player
-    loadNewestRelease();
+  });
 
 });
+```
